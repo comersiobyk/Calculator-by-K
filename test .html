@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konfirmasi Pembayaran</title>
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background-image: url('Background.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: #fff;
+      padding: 15px;
+      max-width: 450px;
+      margin: 0 auto;
+      backdrop-filter: blur(6px);
+      background-color: rgba(0, 0, 0, 0.6); /* backup kalau blur gak jalan */
+    }
+
+    .hidden { display: none; }
+
+    .form-section, .result-section {
+      background-color: rgba(26, 36, 51, 0.85);
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #ccc;
+      font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background-color: #2a3446;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .form-group input[type="file"] {
+      background-color: transparent;
+      padding: 0;
+    }
+
+    .button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #0099ff, #0066cc);
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .header, .detail-card, .qris-section {
+      margin-bottom: 15px;
+    }
+
+    .detail-card, .qris-section {
+      background-color: #1a2433;
+      border-radius: 20px;
+      padding: 12px 18px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #2a3446;
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .title {
+      font-size: 20px;
+      color: #ccc;
+      font-weight: 500;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .logo-container, .qr-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    .logo-container img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .qr-container img {
+      width: 180px;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .hash-container {
+      margin-top: 15px;
+      word-break: break-word;
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="form-section" id="form-section">
+  <!-- Form -->
+  <div class="form-group">
+    <label>Nama Customer</label>
+    <input type="text" id="customerName">
+  </div>
+  <div class="form-group">
+    <label>Nama Layanan</label>
+    <select id="serviceName">
+      <option value="Comersio Pulsa">Comersio Pulsa</option>
+      <option value="Comersio Data">Comersio Data</option>
+      <option value="Comersio Layanan Lain">Comersio Lainnya</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Nama Produk</label>
+    <input type="text" id="productName">
+  </div>
+  <div class="form-group">
+    <label>Nominal Pembayaran</label>
+    <input type="number" id="paymentAmount">
+  </div>
+  <div class="form-group">
+    <label>Potongan Harga (Diskon)</label>
+    <input type="number" id="discountAmount">
+  </div>
+  <div class="form-group">
+    <label>Metode Pembayaran</label>
+    <select id="paymentMethod" onchange="toggleQrUpload()">
+      <option value="QRIS Bayar Nanti">QRIS Bayar Nanti</option>
+      <option value="QRIS">QRIS</option>
+      <option value="Transfer Bank">Transfer Bank</option>
+      <option value="eWallet">eWallet</option>
+    </select>
+  </div>
+  <div class="form-group" id="qrUploadGroup">
+    <label>Upload QR Code (Opsional)</label>
+    <input type="file" id="qrUpload" accept="image/*">
+  </div>
+  <div class="form-group hidden" id="eWalletDetails">
+    <label>Nomor Telepon eWallet</label>
+    <input type="text" id="eWalletPhone">
+    <label>Jenis eWallet (Contoh: DANA, OVO)</label>
+    <input type="text" id="eWalletType">
+  </div>
+  <button class="button" onclick="generateReceipt()">Generate Bukti</button>
+</div>
+
+<div id="result-section" class="hidden">
+  <div class="title">Konfirmasi Pembayaran</div>
+  <div class="logo-container">
+    <img src="Comersio.png" id="result-logo">
+  </div>
+
+  <div class="detail-card">
+    <div class="detail-row">
+      <div>Nama Customer</div>
+      <div id="rCustomerName"></div>
+    </div>
+  </div>
+
+  <div class="detail-card">
+    <div class="detail-row">
+      <div>Nama Layanan</div>
+      <div id="rServiceName"></div>
+    </div>
+    <div class="detail-row">
+      <div>No Pembayaran</div>
+      <div id="rPaymentNumber"></div>
+    </div>
+    <div class="detail-row">
+      <div>Produk</div>
+      <div id="rProductName"></div>
+    </div>
+  </div>
+
+  <div class="detail-card">
+    <div class="detail-row">
+      <div>Pembayaran</div>
+      <div id="rPaymentAmount"></div>
+    </div>
+    <div class="detail-row">
+      <div>Potongan Harga</div>
+      <div id="rDiscountAmount"></div>
+    </div>
+    <div class="detail-row">
+      <div>Total Pembayaran</div>
+      <div id="rTotalAmount"></div>
+    </div>
+  </div>
+
+  <div class="qris-section">
+    <div class="detail-row">
+      <div>Bayar Via</div>
+      <div id="rPaymentMethod"></div>
+    </div>
+    <div class="qr-container">
+      <img src="Statis.jpg" id="rQRImage">
+    </div>
+    <div class="hash-container">
+      <div>Hashing :</div>
+      <div id="rHashValue"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+<script>
+function generateRandomPaymentNumber() {
+  return Math.floor(Math.random() * 900000000) + 100000000;
+}
+
+function formatCurrencyShort(amount) {
+  return 'Rp' + amount.toLocaleString('id-ID');
+}
+
+function toggleQrUpload() {
+  const method = document.getElementById('paymentMethod').value;
+  document.getElementById('qrUploadGroup').style.display = (method === 'QRIS' || method === 'QRIS Bayar Nanti') ? 'block' : 'none';
+  document.getElementById('eWalletDetails').style.display = method === 'eWallet' ? 'block' : 'none';
+}
+
+function generateReceipt() {
+  const name = document.getElementById('customerName').value;
+  const service = document.getElementById('serviceName').value;
+  const product = document.getElementById('productName').value;
+  const amount = parseInt(document.getElementById('paymentAmount').value || 0);
+  const discount = parseInt(document.getElementById('discountAmount').value || 0);
+  const method = document.getElementById('paymentMethod').value;
+  const qr = document.getElementById('qrUpload').files[0];
+  const phone = document.getElementById('eWalletPhone').value;
+  const wallet = document.getElementById('eWalletType').value;
+
+  const number = generateRandomPaymentNumber();
+  const total = amount - discount;
+  const date = new Date().toISOString();
+  const hash = md5(name + service + product + number + amount + discount + method + date);
+
+  document.getElementById('rCustomerName').innerText = name;
+  document.getElementById('rServiceName').innerText = service;
+  document.getElementById('rPaymentNumber').innerText = number;
+  document.getElementById('rProductName').innerText = product;
+  document.getElementById('rPaymentAmount').innerText = formatCurrencyShort(amount);
+  document.getElementById('rDiscountAmount').innerText = formatCurrencyShort(discount);
+  document.getElementById('rTotalAmount').innerText = formatCurrencyShort(total);
+  document.getElementById('rPaymentMethod').innerText = method === 'eWallet' ? `${wallet} (${phone})` : method;
+  document.getElementById('rHashValue').innerText = hash;
+
+  const qrImage = document.getElementById('rQRImage');
+  const qrContainer = document.querySelector('.qr-container');
+  if (method === 'QRIS Bayar Nanti' || method === 'QRIS') {
+    qrContainer.style.display = 'flex';
+    if (qr) {
+      const reader = new FileReader();
+      reader.onload = (e) => qrImage.src = e.target.result;
+      reader.readAsDataURL(qr);
+    } else {
+      qrImage.src = 'Statis.jpg';
+    }
+  } else {
+    qrContainer.style.display = 'none';
+    qrImage.src = '';
+  }
+
+  document.getElementById('form-section').classList.add('hidden');
+  document.getElementById('result-section').classList.remove('hidden');
+}
+</script>
+
+</body>
+</html>
